@@ -195,6 +195,20 @@ local colorYellowBland = rgbm(1, 1, 0.5, 1)
 local colorRed = rgbm(1, 0, 0, 1)
 local colorOrange = rgbm(1, 0.5, 0, 1)
 
+
+-- OnlineEvent definitions for server communication
+local playerConnectEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_playerConnect"),
+    connected = ac.StructItem.byte()
+})
+
+local driftCompleteEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_driftComplete"),
+    score = ac.StructItem.int32(),
+    avgAngle = ac.StructItem.float(),
+    avgCombo = ac.StructItem.float()
+})
+
 -- ==========================
 -- Screen detection function
 -- ==========================
@@ -295,32 +309,21 @@ function showWarning(text)
     WarningAlpha = 0
 end
 
-function saveDriftToFile(score, angle, duration, combo)
-    local timestamp = os.time()
-    local data = string.format("DRIFT,%d,%.1f,%.1f,%.1f,%d\n", 
-        score, angle, duration, combo, timestamp)
-    
-    local file = io.open("drift_data.txt", "a")
-    if file then
-        file:write(data)
-        file:close()
-    end
-end
 
 -- =============================
 -- Send player session data
 -- =============================
 function sendPlayerSession()
     if not PlayerSessionSent then
-        local carId = ac.getCarID(0) or "Unknown"
-        local carName = ac.getCarName(0) or "Unknown"
-        
-        -- TODO: Replace with correct server communication function
-        ac.log("DriftGod: [DATABASE] Player session - Car: " .. carName .. " (ID: " .. carId .. ")")
+        -- Send connection event to server
+        playerConnectEvent({
+            connected = 1
+        })
         
         PlayerSessionSent = true
-        LastCarModel = carId
+        LastCarModel = ac.getCarID(0) or "Unknown"
         SessionStartTime = SecondsTimer
+        ac.log("DriftGod: Sent player connect event to server")
     end
 end
 
@@ -328,9 +331,12 @@ end
 -- Send drift completion data
 -- =============================
 function sendDriftCompleted(score, angle, duration, combo)
-    -- TODO: Replace with correct server communication function
-    ac.log(string.format("DriftGod: [DATABASE] Drift completed - Score: %d, Angle: %.1f°, Duration: %.1fs, Combo: %.1fx", 
-        score, angle, duration, combo))
+    driftCompleteEvent({
+        score = score,          -- Full value, no scaling
+        avgAngle = angle,       -- Full precision
+        avgCombo = combo        -- Full precision
+    })
+    ac.log("DriftGod: Sent drift completion to server - Score: " .. score)
 end
 
 -- =============================
@@ -451,7 +457,6 @@ function script.update(dt)
                 end
             end
             
-			saveDriftToFile(math.floor(CurrentDriftScore), math.floor(CurrentDriftMaxAngle), CurrentDriftTotalTime, ComboReached)
             CurrentDriftScore = 0
             CurrentDriftCombo = 1
             ComboReached = 0

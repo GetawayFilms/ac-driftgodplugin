@@ -12,3 +12,12 @@ D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\
 D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\obj\Release\net8.0\linux-x64\ref\DriftGodPlugin.dll
 D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\obj\Release\net8.0\linux-x64\DriftGod.A6E18368.Up2Date
 D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\bin\Release\net8.0\linux-x64\JetBrains.Annotations.dll
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.csproj.AssemblyReference.cache
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.GeneratedMSBuildEditorConfig.editorconfig
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.AssemblyInfoInputs.cache
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.AssemblyInfo.cs
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.csproj.CoreCompileInputs.cache
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.sourcelink.json
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.dll
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\ac-driftgodplugin\obj\Release\net8.0\linux-x64\refint\DriftGodPlugin.dll
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\DriftGodPlugin\obj\Release\net8.0\linux-x64\DriftGodPlugin.sourcelink.json
