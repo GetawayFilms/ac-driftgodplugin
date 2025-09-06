@@ -1,0 +1,4 @@
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\out-linux-x64\plugins\DriftGodPlugin\DriftGodPlugin.dll
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\out-linux-x64\plugins\DriftGodPlugin\DriftGodPlugin.deps.json
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\out-linux-x64\plugins\DriftGodPlugin\DriftGodPlugin.runtimeconfig.json
+D:\Street Drift Arcade\AssettoServer plugin\AssettoServer-0.0.54\out-linux-x64\plugins\DriftGodPlugin\JetBrains.Annotations.dll

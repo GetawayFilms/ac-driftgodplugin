@@ -1,0 +1,478 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\DriftGodPlugin\\DriftGodPlugin.csproj": {}
+  },
+  "projects": {
+    "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj",
+        "projectName": "AssettoServer.Shared",
+        "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj",
+        "packagesPath": "C:\\Users\\wayne\\.nuget\\packages\\",
+        "outputPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\wayne\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
+            "Serilog": {
+              "target": "Package",
+              "version": "[3.1.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "linux-x64": {
+          "#import": []
+        }
+      }
+    },
+    "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\AssettoServer.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\AssettoServer.csproj",
+        "projectName": "AssettoServer",
+        "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\AssettoServer.csproj",
+        "packagesPath": "C:\\Users\\wayne\\.nuget\\packages\\",
+        "outputPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\wayne\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj": {
+                "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj",
+                "privateAssets": "all"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Autofac": {
+              "target": "Package",
+              "version": "[7.1.0, )"
+            },
+            "Autofac.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "CXuesong.Luaon": {
+              "target": "Package",
+              "version": "[0.2.7, )"
+            },
+            "CXuesong.Luaon.Json": {
+              "target": "Package",
+              "version": "[0.2.1, )"
+            },
+            "CommandLineParser": {
+              "target": "Package",
+              "version": "[2.9.1, )"
+            },
+            "CommunityToolkit.Common": {
+              "target": "Package",
+              "version": "[8.2.2, )"
+            },
+            "CommunityToolkit.Mvvm": {
+              "target": "Package",
+              "version": "[8.2.2, )"
+            },
+            "DotNext.IO": {
+              "target": "Package",
+              "version": "[4.15.0, )"
+            },
+            "DotNext.Unsafe": {
+              "target": "Package",
+              "version": "[4.14.0, )"
+            },
+            "ErrorProne.NET.CoreAnalyzers": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[0.4.0-beta.1, )"
+            },
+            "ErrorProne.NET.Structs": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[0.4.0-beta.1, )"
+            },
+            "FluentValidation": {
+              "target": "Package",
+              "version": "[11.8.0, )"
+            },
+            "Grpc.Net.Client": {
+              "target": "Package",
+              "version": "[2.59.0, )"
+            },
+            "Humanizer.Core": {
+              "target": "Package",
+              "version": "[2.14.1, )"
+            },
+            "JetBrains.Annotations": {
+              "target": "Package",
+              "version": "[2023.3.0, )"
+            },
+            "McMaster.NETCore.Plugins": {
+              "target": "Package",
+              "version": "[1.4.0, )"
+            },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.19, )",
+              "autoReferenced": true
+            },
+            "Nerdbank.GitVersioning": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[3.4.244, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
+            "NodaTime": {
+              "target": "Package",
+              "version": "[3.1.9, )"
+            },
+            "Open.NAT": {
+              "target": "Package",
+              "version": "[2.1.0, )",
+              "noWarn": [
+                "NU1701"
+              ]
+            },
+            "Polly": {
+              "target": "Package",
+              "version": "[8.2.0, )"
+            },
+            "Qmmands": {
+              "target": "Package",
+              "version": "[5.0.2, )"
+            },
+            "Serilog": {
+              "target": "Package",
+              "version": "[3.1.1, )"
+            },
+            "Serilog.AspNetCore": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Serilog.Enrichers.Environment": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
+            "Serilog.Expressions": {
+              "target": "Package",
+              "version": "[4.0.0, )"
+            },
+            "Serilog.Sinks.Async": {
+              "target": "Package",
+              "version": "[1.5.0, )"
+            },
+            "Serilog.Sinks.Console": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
+            "Serilog.Sinks.File": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
+            "Serilog.Sinks.Grafana.Loki": {
+              "target": "Package",
+              "version": "[8.2.0, )"
+            },
+            "SerilogTimings": {
+              "target": "Package",
+              "version": "[3.0.1, )"
+            },
+            "Sigil": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
+            "SunCalcNet": {
+              "target": "Package",
+              "version": "[1.2.2, )"
+            },
+            "System.IO.Hashing": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "YamlDotNet": {
+              "target": "Package",
+              "version": "[13.7.1, )"
+            },
+            "compujuckel.Supercluster.KDTree": {
+              "target": "Package",
+              "version": "[1.0.8, )"
+            },
+            "ini-parser": {
+              "target": "Package",
+              "version": "[2.5.2, )",
+              "noWarn": [
+                "NU1701"
+              ]
+            },
+            "prometheus-net": {
+              "target": "Package",
+              "version": "[8.1.0, )"
+            },
+            "prometheus-net.AspNetCore": {
+              "target": "Package",
+              "version": "[8.1.0, )"
+            },
+            "protobuf-net.Grpc": {
+              "target": "Package",
+              "version": "[1.1.1, )"
+            },
+            "protobuf-net.Grpc.ClientFactory": {
+              "target": "Package",
+              "version": "[1.1.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.linux-arm64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.linux-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-arm64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.linux-arm64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.linux-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "linux-arm64": {
+          "#import": []
+        },
+        "linux-x64": {
+          "#import": []
+        },
+        "win-x64": {
+          "#import": []
+        }
+      }
+    },
+    "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\DriftGodPlugin\\DriftGodPlugin.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\DriftGodPlugin\\DriftGodPlugin.csproj",
+        "projectName": "DriftGodPlugin",
+        "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\DriftGodPlugin\\DriftGodPlugin.csproj",
+        "packagesPath": "C:\\Users\\wayne\\.nuget\\packages\\",
+        "outputPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\DriftGodPlugin\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\wayne\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj": {
+                "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer.Shared\\AssettoServer.Shared.csproj",
+                "excludeAssets": "runtime"
+              },
+              "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\AssettoServer.csproj": {
+                "projectPath": "D:\\Street Drift Arcade\\AssettoServer plugin\\AssettoServer-0.0.54\\AssettoServer\\AssettoServer.csproj",
+                "excludeAssets": "runtime"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "JetBrains.Annotations": {
+              "target": "Package",
+              "version": "[2023.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "linux-x64": {
+          "#import": []
+        }
+      }
+    }
+  }
+}
