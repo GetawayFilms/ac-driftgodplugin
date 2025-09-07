@@ -43,6 +43,9 @@ end
 --Format the numbers for cleaner look
 -- ===================================
 local function format_number(num)
+    if not num or type(num) ~= "number" then
+        return "0"
+    end
     local formatted = tostring(math.floor(num))
     local len = string.len(formatted)
     
@@ -60,13 +63,13 @@ end
 local UI_CONFIG = {
     
     -- Font sizes (absolute pixel values - bigger = larger text)
-    score_font_size = 160,         -- Main drift score 
-    combo_font_size = 60,          -- Combo multiplier  
-    angle_font_size = 100,         -- Angle display
-    stats_font_size = 50,          -- Statistics board
-    praise_font_size = 80,        -- Praise messages
-    warning_font_size = 60,        -- Warning messages
-	bonus_font_size = 40,          -- Bonus messages
+    score_font_size = 80,         -- Main drift score 
+    combo_font_size = 30,          -- Combo multiplier  
+    angle_font_size = 50,         -- Angle display
+    stats_font_size = 24,          -- Statistics board
+    praise_font_size = 40,        -- Praise messages
+    warning_font_size = 30,        -- Warning messages
+	bonus_font_size = 20,          -- Bonus messages
 
     
     -- Positions (scaled automatically for your resolution)
@@ -132,6 +135,7 @@ local SessionStartTime = 0
 -- Achievement tracking (prevent spam)
 -- =====================
 local LastAchievementTriggered = ""
+local LastAchievementLevel = 0
 
 -- =====================
 -- Drift session tracking variables  
@@ -139,6 +143,13 @@ local LastAchievementTriggered = ""
 local CurrentDriftMaxAngle = 0
 local CurrentDriftTotalTime = 0
 local DriftIsActive = false
+local HandbrakeTimeThisDrift = 0
+
+-- ============================
+-- Personal Best from server
+-- ============================
+local PersonalBest = 0
+local PersonalBestTarget = 0
 
 -- =======================================
 -- Screen detection and scaling variables
@@ -206,7 +217,26 @@ local driftCompleteEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_driftComplete"),
     score = ac.StructItem.int32(),
     avgAngle = ac.StructItem.float(),
-    avgCombo = ac.StructItem.float()
+    avgCombo = ac.StructItem.float(),
+	duration = ac.StructItem.float(),
+	handbrakeTime = ac.StructItem.float()
+})
+
+local personalBestEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_personalBest"),
+    personalBest = ac.StructItem.int64()
+}, function(sender, data)
+    ac.log("DriftGod: Data type: " .. type(data))
+    if data then
+        ac.log("DriftGod: PersonalBest field: " .. tostring(data.personalBest))
+        PersonalBest = tonumber(data.personalBest) or 0
+		PersonalBestTarget = tonumber(data.personalBest)
+    end
+end)
+
+local achievementEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_achievement"),
+    achievementType = ac.StructItem.int32()
 })
 
 -- ==========================
@@ -330,21 +360,39 @@ end
 -- =============================
 -- Send drift completion data
 -- =============================
-function sendDriftCompleted(score, angle, duration, combo)
+function sendDriftCompleted(score, angle, duration, combo, handbrakeTime)
+    ac.log("DriftGod: Sending drift - Duration: " .. tostring(duration))
     driftCompleteEvent({
-        score = score,          -- Full value, no scaling
-        avgAngle = angle,       -- Full precision
-        avgCombo = combo        -- Full precision
+        score = score,
+        avgAngle = angle,
+        avgCombo = combo,
+        duration = duration,
+		handbrakeTime = handbrakeTime
     })
-    ac.log("DriftGod: Sent drift completion to server - Score: " .. score .. ", Angle: " .. angle .. ", Combo: " .. combo)
 end
 
 -- =============================
 -- Send achievement data
 -- =============================
 function sendAchievement(achievement_type, value)
-    -- TODO: Replace with correct server communication function
-    ac.log("DriftGod: Achievement triggered - " .. achievement_type .. " (Value: " .. tostring(value) .. ")")
+	ac.log("DriftGod: sendAchievement called with: " .. achievement_type)
+
+    local achievementCode = 0
+    if achievement_type == "geometry_student" then
+        achievementCode = 1
+    elseif achievement_type == "drift_specialist" then
+        achievementCode = 2
+    elseif achievement_type == "lateral_master" then
+        achievementCode = 3
+    elseif achievement_type == "professor_slideways" then
+        achievementCode = 4
+    elseif achievement_type == "drift_god" then
+        achievementCode = 5
+    end
+    
+    achievementEvent({
+        achievementType = achievementCode
+    })
 end
 
 -- =============================
@@ -382,6 +430,10 @@ function script.update(dt)
         if (Car.localVelocity.z <= 0 and Car.speedKmh > 1) then
             angle = 180 - angle
         end
+		
+		if Car.speedKmh < 2 then
+			angle = 0
+		end
         
         dirt = math.min(Car.wheels[0].surfaceDirt, Car.wheels[1].surfaceDirt, Car.wheels[2].surfaceDirt, Car.wheels[3].surfaceDirt)
         
@@ -394,8 +446,14 @@ function script.update(dt)
                 DriftIsActive = true
                 CurrentDriftMaxAngle = 0
                 CurrentDriftTotalTime = 0
+				HandbrakeTimeThisDrift = 0
                 ac.log("DriftGod: Drift started!")
             end
+			
+			-- Track handbrake usage during drift
+			if Car.handbrake > 0.05 then
+				HandbrakeTimeThisDrift = HandbrakeTimeThisDrift + dt
+			end
             
             -- Track peak angle and total time during drift
             CurrentDriftMaxAngle = math.max(CurrentDriftMaxAngle, angle)
@@ -443,13 +501,19 @@ function script.update(dt)
                         -- DATABASE: Send new best drift achievement
                         sendAchievement("new_session_best", math.floor(CurrentDriftScore))
                     end
+					
+					if math.floor(CurrentDriftScore) > PersonalBestTarget then
+						PersonalBestTarget = math.floor(CurrentDriftScore)
+						-- Optionally send updated PB to server here
+					end
                     
                     -- DATABASE: Send completed drift data with CAPTURED values
                     sendDriftCompleted(
                         math.floor(CurrentDriftScore),
                         math.floor(CurrentDriftMaxAngle),  -- Peak angle during drift
                         CurrentDriftTotalTime,             -- Total drift duration  
-                        ComboReached
+                        ComboReached,
+						HandbrakeTimeThisDrift
                     )
                     
                     ac.log(string.format("DriftGod: Drift ended - Max Angle: %.1f°, Duration: %.1fs", 
@@ -505,6 +569,13 @@ function script.update(dt)
                 BestLapScore = BestLapScore + math.floor(BestLapScoreTarget - BestLapScore)
             end
         end
+		
+		if PersonalBest ~= PersonalBestTarget then
+			PersonalBest = PersonalBest + math.floor((PersonalBestTarget - PersonalBest) / 50)
+			if math.floor((PersonalBestTarget - PersonalBest) / 50) == 0 then
+				PersonalBest = PersonalBest + math.floor(PersonalBestTarget - PersonalBest)
+			end
+		end
         
 -- ===================
 -- Warning conditions
@@ -615,49 +686,67 @@ function script.update(dt)
 -- Show praise messages
 -- =====================
         if NoWarning and PraiseTimer <= 0 then
-            local currentAchievement = ""
-            if CurrentDriftScore > 256000 then
-                currentAchievement = "drift_god"
-                showPraise("DRIFT GOD!")
-            elseif ComboReached >= 5 or CurrentDriftScore > 64000 then
-                currentAchievement = "professor_slideways"
-                showPraise("PROFESSOR SLIDEWAYS!")
-            elseif ComboReached >= 4 or CurrentDriftScore > 16000 then
-                currentAchievement = "lateral_master"
-                showPraise("LATERAL MASTER!")
-            elseif ComboReached >= 3 or CurrentDriftScore > 4000 then
-                currentAchievement = "drift_specialist"
-                showPraise("DRIFT SPECIALIST!")
-            elseif ComboReached >= 2 or CurrentDriftScore > 1000 then
-                currentAchievement = "geometry_student"
-                showPraise("GEOMETRY STUDENT!")
-            end
-            
-            -- Only send achievement if it's different from the last one
-            if currentAchievement ~= "" and currentAchievement ~= LastAchievementTriggered then
-                sendAchievement(currentAchievement, CurrentDriftScore)
-                LastAchievementTriggered = currentAchievement
-            end
-        end
+			local currentAchievement = ""
+			if CurrentDriftScore > 256000 then
+				currentAchievement = "drift_god"
+			elseif ComboReached >= 5 or CurrentDriftScore > 64000 then
+				currentAchievement = "professor_slideways"
+			elseif ComboReached >= 4 or CurrentDriftScore > 16000 then
+				currentAchievement = "lateral_master"
+			elseif ComboReached >= 3 or CurrentDriftScore > 4000 then
+				currentAchievement = "drift_specialist"
+			elseif ComboReached >= 2 or CurrentDriftScore > 1000 then
+				currentAchievement = "geometry_student"
+			end
+			
+			-- Only show praise AND send achievement if it's different from the last one
+			if currentAchievement ~= "" and currentAchievement ~= LastAchievementTriggered then
+				if currentAchievement == "drift_god" then
+					showPraise("DRIFT GOD!")
+				elseif currentAchievement == "professor_slideways" then
+					showPraise("PROFESSOR SLIDEWAYS!")
+				elseif currentAchievement == "lateral_master" then
+					showPraise("LATERAL MASTER!")
+				elseif currentAchievement == "drift_specialist" then
+					showPraise("DRIFT SPECIALIST!")
+				elseif currentAchievement == "geometry_student" then
+					showPraise("GEOMETRY STUDENT!")
+				end
+				
+				sendAchievement(currentAchievement, CurrentDriftScore)
+				LastAchievementTriggered = currentAchievement
+			end
+		end
         
 -- ==================
 -- Update animations
 -- ==================
-        if PraiseTimer > 0 then
-            PraiseTimer = PraiseTimer - dt
-            local progress = 1 - (PraiseTimer / PRAISE_DURATION)
-            if progress < 0.3 then
-                PraiseScale = progress / 0.3
-                PraiseAlpha = progress / 0.3
-            elseif progress < 0.7 then
-                PraiseScale = 1
-                PraiseAlpha = 1
-            else
-                local fadeProgress = (progress - 0.7) / 0.3
-                PraiseScale = 1 - fadeProgress * 0.2
-                PraiseAlpha = 1 - fadeProgress
-            end
-        end
+        -- Update the praise animation section:
+		if PraiseTimer > 0 then
+			PraiseTimer = PraiseTimer - dt
+			local progress = 1 - (PraiseTimer / PRAISE_DURATION)
+			
+			if progress < 0.2 then
+				-- Pop-in phase: quick scale up with bounce
+				local bounceProgress = progress / 0.2
+				PraiseScale = bounceProgress * bounceProgress * 1.4  -- Overshoot to 130%
+				PraiseAlpha = bounceProgress
+			elseif progress < 0.3 then
+				-- Settle phase: bounce back down to normal size
+				local settleProgress = (progress - 0.2) / 0.1
+				PraiseScale = 1.3 - (settleProgress * 0.3)  -- Back down to 100%
+				PraiseAlpha = 1
+			elseif progress < 0.7 then
+				-- Hold phase: stable at normal size
+				PraiseScale = 1
+				PraiseAlpha = 1
+			else
+				-- Fade out phase
+				local fadeProgress = (progress - 0.7) / 0.3
+				PraiseScale = 1 - fadeProgress * 0.2  -- Shrink slightly as it fades
+				PraiseAlpha = 1 - fadeProgress
+			end
+		end
 		
 		if BonusTimer > 0 then
             BonusTimer = BonusTimer - dt
@@ -736,7 +825,7 @@ function script.drawUI()
 	-- =================
     ui.pushDWriteFont(get_font_main())
     ui.setCursor(vec2(scaled(UI_CONFIG.score_x), scaled(UI_CONFIG.score_y)))
-    ui.dwriteText(format_number(CurrentDriftScore), UI_CONFIG.score_font_size, mainColor)
+    ui.dwriteText(format_number(CurrentDriftScore), scaled(UI_CONFIG.score_font_size), mainColor)
     
 	-- =================
     -- Combo multiplier
@@ -746,7 +835,7 @@ function script.drawUI()
     if ExtraScore then
         comboText = comboText .. string.format(" x%.1f", ExtraScoreMultiplier)
     end
-    ui.dwriteText(comboText, UI_CONFIG.combo_font_size, mainColor)
+    ui.dwriteText(comboText, scaled(UI_CONFIG.combo_font_size), mainColor)
     ui.popDWriteFont()
     
 	-- =================
@@ -768,7 +857,7 @@ function script.drawUI()
         
         ui.pushDWriteFont(get_font_main())
         ui.setCursor(vec2(screen_width - scaled(UI_CONFIG.angle_x_from_right), scaled(UI_CONFIG.angle_y)))
-        ui.dwriteText(string.format("📐%2d°", math.floor(angle)), UI_CONFIG.angle_font_size, angleColor)
+        ui.dwriteText(string.format("📐%2d°", math.floor(angle)), scaled(UI_CONFIG.angle_font_size), angleColor)
         ui.popDWriteFont()
     end
     
@@ -778,17 +867,17 @@ function script.drawUI()
     local stats_y = screen_height - scaled(UI_CONFIG.stats_y_from_bottom)
     ui.pushDWriteFont(get_font_stats())
     ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y))
-    ui.dwriteText("DRIFT STATS", UI_CONFIG.stats_font_size, colorRed)
+    ui.dwriteText("DRIFT STATS", scaled(UI_CONFIG.stats_font_size), colorRed)
     
     ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing)))
-    ui.dwriteText("TOTAL: " .. format_number(TotalScore), UI_CONFIG.stats_font_size, colorWhite)
+    ui.dwriteText("PB: " .. format_number(PersonalBest), scaled(UI_CONFIG.stats_font_size), colorWhite)
     
     ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing * 2)))
-    ui.dwriteText("BEST: " .. format_number(BestDrift), UI_CONFIG.stats_font_size, colorWhite)
+    ui.dwriteText("THIS SESSION: " .. format_number(BestDrift), scaled(UI_CONFIG.stats_font_size), colorWhite)
     
     if TrackHasSpline then
         ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing * 3)))
-        ui.dwriteText("LAP: " .. format_number(CurrentLapScore), UI_CONFIG.stats_font_size, colorWhite)
+        ui.dwriteText("LAP: " .. format_number(CurrentLapScore), scaled(UI_CONFIG.stats_font_size), colorWhite)
     end
     ui.popDWriteFont()
     
@@ -796,19 +885,22 @@ function script.drawUI()
     -- Animated messages
 	-- =================
     if PraiseTimer > 0 then
-        ui.pushDWriteFont(get_font_main())
-        ui.setCursor(vec2(0, scaled(UI_CONFIG.message_y_praise)))
-        ui.dwriteTextAligned(PraiseText, UI_CONFIG.praise_font_size, ui.Alignment.Center, 
-    ui.Alignment.Start, 
-    vec2(0, 0), 
-    false, rgbm(0, 1, 0, PraiseAlpha))
-        ui.popDWriteFont()
-    end
+		ui.pushDWriteFont(get_font_main())
+		ui.setCursor(vec2(0, scaled(UI_CONFIG.message_y_praise)))
+		
+		local scaledFontSize = scaled(UI_CONFIG.praise_font_size) * PraiseScale
+		
+		ui.dwriteTextAligned(PraiseText, scaledFontSize, ui.Alignment.Center, 
+			ui.Alignment.Start, 
+			vec2(0, 0), 
+			false, rgbm(0, 1, 0, PraiseAlpha))
+		ui.popDWriteFont()
+	end
 	
 	if BonusTimer > 0 then
         ui.pushDWriteFont(get_font_message())
         ui.setCursor(vec2(- scaled(UI_CONFIG.message_x_bonus), screen_height - scaled(UI_CONFIG.message_y_bonus)))
-        ui.dwriteTextAligned(BonusText, UI_CONFIG.bonus_font_size, ui.Alignment.End, 
+        ui.dwriteTextAligned(BonusText, scaled(UI_CONFIG.bonus_font_size), ui.Alignment.End, 
     ui.Alignment.Start, 
     vec2(0, 0), 
     false, rgbm(1, 0.6, 0.1, BonusAlpha))
@@ -818,7 +910,7 @@ function script.drawUI()
     if WarningTimer > 0 then
         ui.pushDWriteFont(get_font_message())
         ui.setCursor(vec2(- scaled(UI_CONFIG.message_x_warning), screen_height - scaled(UI_CONFIG.message_y_warning)))
-        ui.dwriteTextAligned(WarningText, UI_CONFIG.warning_font_size, ui.Alignment.End, 
+        ui.dwriteTextAligned(WarningText, scaled(UI_CONFIG.warning_font_size), ui.Alignment.End, 
     ui.Alignment.Start, 
     vec2(0, 0), 
     false, rgbm(1, 0, 0, WarningAlpha))

@@ -41,6 +41,8 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		cspClientMessageTypeManager.RegisterOnlineEvent<PlayerConnectPacket>(OnPlayerConnect);
 		cspClientMessageTypeManager.RegisterOnlineEvent<DriftCompletePacket>(OnDriftComplete);
 		cspClientMessageTypeManager.RegisterOnlineEvent<SessionEndPacket>(OnSessionEnd);
+		cspClientMessageTypeManager.RegisterOnlineEvent<PersonalBestPacket>(OnPersonalBestRequest);
+		cspClientMessageTypeManager.RegisterOnlineEvent<AchievementPacket>(OnAchievement);
         
         // Hook into client connection events
         _entryCarManager.ClientConnected += OnClientConnected;
@@ -99,6 +101,11 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
         }
     }
 	
+	private void OnPersonalBestRequest(ACTcpClient sender, PersonalBestPacket packet)
+	{
+		// Not used for incoming requests, only for outgoing PB data
+	}
+	
 	private void OnPlayerConnect(ACTcpClient sender, PlayerConnectPacket packet)
 	{
 		Log.Information("DriftGod: Player {PlayerName} sent connect event", sender.Name);
@@ -106,20 +113,66 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		// Create drift session when we receive the connect event
 		var driftSession = new DriftSession(sender);
 		_driftSessions[sender] = driftSession;
+		
+		// Send personal best back to client
+		sender.SendPacket(new PersonalBestPacket
+		{
+			PersonalBest = driftSession.PersonalBest
+		});
+		
+		Log.Information("DriftGod: Sent PB {PersonalBest} to {PlayerName}", driftSession.PersonalBest, sender.Name);
+	}
+	
+	private void OnAchievement(ACTcpClient sender, AchievementPacket packet)
+	{
+		if (_driftSessions.TryGetValue(sender, out var session))
+		{
+			var stats = session.GetStats();
+			string achievementName = "";
+			
+			switch (packet.AchievementType)
+			{
+				case 1:
+					stats.TimesReachedGeometryStudent++;
+					achievementName = "Geometry Student";
+					break;
+				case 2:
+					stats.TimesReachedDriftSpecialist++;
+					achievementName = "Drift Specialist";
+					break;
+				case 3:
+					stats.TimesReachedLateralMaster++;
+					achievementName = "Lateral Master";
+					break;
+				case 4:
+					stats.TimesReachedProfessorSlideways++;
+					achievementName = "Professor Slideways";
+					break;
+				case 5:
+					stats.TimesReachedDriftGod++;
+					achievementName = "Drift God";
+					break;
+			}
+			
+			Log.Information("DriftGod: {PlayerName} achieved {Achievement}", sender.Name, achievementName);
+		}
 	}
 
 	private void OnDriftComplete(ACTcpClient sender, DriftCompletePacket packet)
 	{
-		// Convert the scaled values back to actual values
 		long actualScore = packet.Score;
 		float actualAngle = packet.AverageAngle;
+		float actualDuration = packet.Duration;  // Get the duration
+		float handbrakeTime = packet.HandbrakeTime;
+		string carModel = sender.EntryCar?.Model ?? "Unknown";
 		
-		Log.Information("DriftGod: Drift completed by {PlayerName} - Score: {Score}, Angle: {Angle:F1}°, Combo: {Combo:F1}x", 
-			sender.Name, actualScore, actualAngle, packet.AverageCombo);
+		Log.Information("DriftGod: Drift completed by {PlayerName} - Score: {Score}, Angle: {Angle:F1}°, Duration: {Duration:F1}s", 
+			sender.Name, actualScore, actualAngle, actualDuration);
 			
 		if (_driftSessions.TryGetValue(sender, out var session))
 		{
-			session.OnDriftScoreReceived(actualScore, actualAngle, 0, 0, "");
+			session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel, handbrakeTime);
+
 		}
 	}
 
@@ -163,6 +216,8 @@ public class DriftSession
         PlayerName = client.Name ?? "Unknown";
         SteamId = client.Guid;
         SessionStart = DateTime.UtcNow;
+		
+		string currentCar = client.EntryCar?.Model ?? "Unknown";
         
         // Create data directory
         var dataDir = Path.Combine("drift-data", "players", SteamId.ToString());
@@ -171,11 +226,11 @@ public class DriftSession
         
         LoadPlayerStats();
         
-        Log.Information("DriftPlugin: Created session for {PlayerName} - PB: {PersonalBest:N0} points", 
-                       PlayerName, PersonalBest);
+        Log.Information("DriftPlugin: Created session for {PlayerName} in {CarModel} - PB: {PersonalBest:N0} points", 
+                       PlayerName, currentCar, PersonalBest);
     }
     
-    public void OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName)
+    public void OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName, float handbrakeTime)
     {
         SessionDrifts++;
         
@@ -184,6 +239,12 @@ public class DriftSession
         {
             SessionBestScore = score;
         }
+		
+		if (duration > _stats.LongestSingleDrift)
+		{
+			_stats.LongestSingleDrift = duration;
+			Log.Information("DriftGod: New longest drift for {PlayerName}: {Duration:F1}s", PlayerName, duration);
+		}
         
         // Check for new personal best
         bool isNewPB = false;
@@ -194,17 +255,15 @@ public class DriftSession
             
             // Update persistent stats for new personal best
             _stats.BestScore = score;
-            _stats.BestScoreDate = DateTime.UtcNow;
             _stats.BestScoreMaxAngle = maxAngle;
-            _stats.BestScoreMaxSpeed = maxSpeed;
-            _stats.BestScoreDuration = duration;
-            _stats.BestScoreCarName = carName;
+            _stats.BestScoreCarName = Client.EntryCar?.Model ?? "Unknown";
         }
         
         // Update general stats
         _stats.TotalDrifts++;
         _stats.TotalPoints += score;
         _stats.LastPlayedDate = DateTime.UtcNow;
+		_stats.TotalHandbrakeTime += handbrakeTime;
         
         // Update averages
         _stats.AverageScore = _stats.TotalDrifts > 0 ? _stats.TotalPoints / _stats.TotalDrifts : 0;
@@ -283,18 +342,13 @@ public class PlayerDriftStats
     
     // Best performance records
     public long BestScore { get; set; }
-    public DateTime? BestScoreDate { get; set; }
     public float BestScoreMaxAngle { get; set; }
-    public float BestScoreMaxSpeed { get; set; }
-    public float BestScoreDuration { get; set; }
     public string BestScoreCarName { get; set; } = string.Empty;
     
     // Drift skill metrics
-    public float PersonalBestAngle { get; set; }
-    public float AverageTopAngle { get; set; }  // Average of top 10 angles
+    public float AverageAngle { get; set; }  // Average of top 10 angles
     public float LongestSingleDrift { get; set; }  // Duration in seconds
     public float LongestTimeAtMaxCombo { get; set; }  // Time held at 5x combo
-    public float TopSpeedAchieved { get; set; }
     
     // Behavioral tracking
     public float TotalOffroadTime { get; set; }  // For offroad achievements
@@ -308,11 +362,9 @@ public class PlayerDriftStats
     public long TotalPoints { get; set; }
     public long AverageScore { get; set; }
     public TimeSpan TotalSessionTime { get; set; }
-    public TimeSpan TotalPlayTime { get; set; }  // Lifetime across all sessions
     
     // Consistency metrics
     public int ConsecutiveDriftsWithoutCrash { get; set; }
-    public int BestDriftStreak { get; set; }
     public float DriftConsistencyRating { get; set; }  // How close angles stay to average
     
     // Achievement milestone counters
@@ -345,10 +397,30 @@ public class DriftCompletePacket : OnlineEvent<DriftCompletePacket>
     
     [OnlineEventField(Name = "avgCombo")]
     public float AverageCombo;
+	
+	[OnlineEventField(Name = "duration")]
+    public float Duration;
+	
+	[OnlineEventField(Name = "handbrakeTime")]
+	public float HandbrakeTime;
 }
 
 [OnlineEvent(Key = "DriftGod_sessionEnd")]
 public class SessionEndPacket : OnlineEvent<SessionEndPacket>
 {
-    // Empty for now
+
+}
+
+[OnlineEvent(Key = "DriftGod_personalBest")]
+public class PersonalBestPacket : OnlineEvent<PersonalBestPacket>
+{
+    [OnlineEventField(Name = "personalBest")]
+    public long PersonalBest;
+}
+
+[OnlineEvent(Key = "DriftGod_achievement")]
+public class AchievementPacket : OnlineEvent<AchievementPacket>
+{
+    [OnlineEventField(Name = "achievementType")]
+    public int AchievementType;
 }
