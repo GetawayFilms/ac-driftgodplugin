@@ -336,7 +336,7 @@ function sendDriftCompleted(score, angle, duration, combo)
         avgAngle = angle,       -- Full precision
         avgCombo = combo        -- Full precision
     })
-    ac.log("DriftGod: Sent drift completion to server - Score: " .. score)
+    ac.log("DriftGod: Sent drift completion to server - Score: " .. score .. ", Angle: " .. angle .. ", Combo: " .. combo)
 end
 
 -- =============================
@@ -344,7 +344,7 @@ end
 -- =============================
 function sendAchievement(achievement_type, value)
     -- TODO: Replace with correct server communication function
-    ac.log("DriftGod: [DATABASE] Achievement triggered - " .. achievement_type .. " (Value: " .. tostring(value) .. ")")
+    ac.log("DriftGod: Achievement triggered - " .. achievement_type .. " (Value: " .. tostring(value) .. ")")
 end
 
 -- =============================
@@ -353,7 +353,7 @@ end
 function sendStatsUpdate()
     local carId = ac.getCarID(0) or "Unknown"
     -- TODO: Replace with correct server communication function
-    ac.log(string.format("DriftGod: [DATABASE] Stats update - Total: %d, Best: %d, Session: %.1fs", 
+    ac.log(string.format("DriftGod: Stats update - Total: %d, Best: %d, Session: %.1fs", 
         TotalScore, BestDrift, SecondsTimer - SessionStartTime))
 end
 

@@ -70,13 +70,13 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "DriftGodPlugin: Failed to load Lua script");
+                Log.Error(ex, "DriftGod: Failed to load Lua script");
                 throw;
             }
         }
         else
         {
-            Log.Warning("DriftGodPlugin: Client messages are disabled. The drift UI will not work!");
+            Log.Warning("DriftGod: Client messages are disabled. The drift UI will not work!");
         }
         
         Log.Information("DriftGodPlugin by Living God - Initialized");
@@ -85,12 +85,12 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 
     private void OnClientConnected(ACTcpClient client, EventArgs args)
 	{
-		Log.Information("DriftGodPlugin: {PlayerName} connected", client.Name);
+		Log.Information("DriftGod: {PlayerName} connected", client.Name);
 	}
 
     private void OnClientDisconnected(ACTcpClient client, EventArgs args)
     {
-        Log.Information("DriftGodPlugin: {PlayerName} disconnected", client.Name);
+        Log.Information("DriftGod: {PlayerName} disconnected", client.Name);
         
         if (_driftSessions.TryGetValue(client, out var session))
         {
