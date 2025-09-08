@@ -163,7 +163,6 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		long actualScore = packet.Score;
 		float actualAngle = packet.AverageAngle;
 		float actualDuration = packet.Duration;  // Get the duration
-		float handbrakeTime = packet.HandbrakeTime;
 		string carModel = sender.EntryCar?.Model ?? "Unknown";
 		
 		Log.Information("DriftGod: Drift completed by {PlayerName} - Score: {Score}, Angle: {Angle:F1}°, Duration: {Duration:F1}s", 
@@ -171,7 +170,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 			
 		if (_driftSessions.TryGetValue(sender, out var session))
 		{
-			session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel, handbrakeTime);
+			session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel);
 
 		}
 	}
@@ -230,7 +229,7 @@ public class DriftSession
                        PlayerName, currentCar, PersonalBest);
     }
     
-    public void OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName, float handbrakeTime)
+    public void OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName)
     {
         SessionDrifts++;
         
@@ -263,7 +262,6 @@ public class DriftSession
         _stats.TotalDrifts++;
         _stats.TotalPoints += score;
         _stats.LastPlayedDate = DateTime.UtcNow;
-		_stats.TotalHandbrakeTime += handbrakeTime;
         
         // Update averages
         _stats.AverageScore = _stats.TotalDrifts > 0 ? _stats.TotalPoints / _stats.TotalDrifts : 0;
@@ -351,8 +349,6 @@ public class PlayerDriftStats
     public float LongestTimeAtMaxCombo { get; set; }  // Time held at 5x combo
     
     // Behavioral tracking
-    public float TotalOffroadTime { get; set; }  // For offroad achievements
-    public float TotalHandbrakeTime { get; set; }  // Total handbrake usage
     public int MostUsedGear { get; set; }  // Favorite gear
     public string FavoriteCar { get; set; } = string.Empty;  // Most driven car
     public int ChatMessagesSent { get; set; }
@@ -400,9 +396,6 @@ public class DriftCompletePacket : OnlineEvent<DriftCompletePacket>
 	
 	[OnlineEventField(Name = "duration")]
     public float Duration;
-	
-	[OnlineEventField(Name = "handbrakeTime")]
-	public float HandbrakeTime;
 }
 
 [OnlineEvent(Key = "DriftGod_sessionEnd")]

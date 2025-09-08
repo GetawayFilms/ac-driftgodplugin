@@ -98,6 +98,7 @@ local UI_CONFIG = {
 local CurrentDriftTime = 0
 local CurrentDriftTimeout = 2
 local CurrentDriftScore = 0
+local CurrentDriftScoreTarget = 0
 local CurrentDriftCombo = 1
 local TotalScore = 0
 local TotalScoreTarget = 0
@@ -143,7 +144,6 @@ local LastAchievementLevel = 0
 local CurrentDriftMaxAngle = 0
 local CurrentDriftTotalTime = 0
 local DriftIsActive = false
-local HandbrakeTimeThisDrift = 0
 
 -- ============================
 -- Personal Best from server
@@ -218,8 +218,7 @@ local driftCompleteEvent = ac.OnlineEvent({
     score = ac.StructItem.int32(),
     avgAngle = ac.StructItem.float(),
     avgCombo = ac.StructItem.float(),
-	duration = ac.StructItem.float(),
-	handbrakeTime = ac.StructItem.float()
+	duration = ac.StructItem.float()
 })
 
 local personalBestEvent = ac.OnlineEvent({
@@ -360,14 +359,13 @@ end
 -- =============================
 -- Send drift completion data
 -- =============================
-function sendDriftCompleted(score, angle, duration, combo, handbrakeTime)
+function sendDriftCompleted(score, angle, duration, combo)
     ac.log("DriftGod: Sending drift - Duration: " .. tostring(duration))
     driftCompleteEvent({
         score = score,
         avgAngle = angle,
         avgCombo = combo,
-        duration = duration,
-		handbrakeTime = handbrakeTime
+        duration = duration
     })
 end
 
@@ -446,20 +444,14 @@ function script.update(dt)
                 DriftIsActive = true
                 CurrentDriftMaxAngle = 0
                 CurrentDriftTotalTime = 0
-				HandbrakeTimeThisDrift = 0
                 ac.log("DriftGod: Drift started!")
             end
 			
-			-- Track handbrake usage during drift
-			if Car.handbrake > 0.05 then
-				HandbrakeTimeThisDrift = HandbrakeTimeThisDrift + dt
-			end
             
             -- Track peak angle and total time during drift
             CurrentDriftMaxAngle = math.max(CurrentDriftMaxAngle, angle)
             CurrentDriftTotalTime = CurrentDriftTotalTime + dt
             
-            -- Your existing drift scoring code
             CurrentDriftTimeout = math.min(1, CurrentDriftTimeout + dt)
             CurrentDriftScore = CurrentDriftScore + (((((angle - 10) * 10 + (Car.speedKmh - 20) * 10) * 1) * dt * CurrentDriftCombo)) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.2
             CurrentDriftCombo = math.min(5, CurrentDriftCombo + (((((angle - 10) + (Car.speedKmh - 20)) * 0.25) * dt) / 100) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.5)
@@ -498,13 +490,10 @@ function script.update(dt)
                     end
                     if math.floor(CurrentDriftScore) > BestDriftTarget then
                         BestDriftTarget = math.floor(CurrentDriftScore)
-                        -- DATABASE: Send new best drift achievement
-                        sendAchievement("new_session_best", math.floor(CurrentDriftScore))
                     end
 					
 					if math.floor(CurrentDriftScore) > PersonalBestTarget then
 						PersonalBestTarget = math.floor(CurrentDriftScore)
-						-- Optionally send updated PB to server here
 					end
                     
                     -- DATABASE: Send completed drift data with CAPTURED values
@@ -512,8 +501,7 @@ function script.update(dt)
                         math.floor(CurrentDriftScore),
                         math.floor(CurrentDriftMaxAngle),  -- Peak angle during drift
                         CurrentDriftTotalTime,             -- Total drift duration  
-                        ComboReached,
-						HandbrakeTimeThisDrift
+                        ComboReached
                     )
                     
                     ac.log(string.format("DriftGod: Drift ended - Max Angle: %.1f°, Duration: %.1fs", 
