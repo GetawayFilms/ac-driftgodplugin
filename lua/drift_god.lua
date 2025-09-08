@@ -202,8 +202,9 @@ local colorYellowBland = rgbm(1, 1, 0.5, 1)
 local colorRed = rgbm(1, 0, 0, 1)
 local colorOrange = rgbm(1, 0.5, 0, 1)
 
-
+-- =================================================
 -- OnlineEvent definitions for server communication
+-- =================================================
 local playerConnectEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_playerConnect"),
     connected = ac.StructItem.byte()
