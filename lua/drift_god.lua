@@ -332,24 +332,6 @@ function showWarning(text)
     WarningAlpha = 0
 end
 
-
--- =============================
--- Send player session data
--- =============================
-function sendPlayerSession()
-    if not PlayerSessionSent then
-        -- Send connection event to server
-        playerConnectEvent({
-            connected = 1
-        })
-        
-        PlayerSessionSent = true
-        LastCarModel = ac.getCarID(0) or "Unknown"
-        SessionStartTime = SecondsTimer
-        ac.log("DriftGod: Sent player connect event to server")
-    end
-end
-
 -- =============================
 -- Send drift completion data
 -- =============================
