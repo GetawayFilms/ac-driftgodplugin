@@ -125,12 +125,6 @@ local NearestCarDistance = 1
 local NoWarning = true
 local ComboReached = 0
 
--- ============================
--- Database tracking variables
--- ============================
-local PlayerSessionSent = false
-local LastCarModel = ""
-local SessionStartTime = 0
 
 -- =====================
 -- Achievement tracking (prevent spam)
@@ -206,8 +200,10 @@ local colorYellowBland = rgbm(1, 1, 0.5, 1)
 local colorRed = rgbm(1, 0, 0, 1)
 local colorOrange = rgbm(1, 0.5, 0, 1)
 
-
+-- =================================================
 -- OnlineEvent definitions for server communication
+-- =================================================
+
 local playerConnectEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_playerConnect"),
     connected = ac.StructItem.byte()
@@ -225,11 +221,9 @@ local personalBestEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_personalBest"),
     personalBest = ac.StructItem.int64()
 }, function(sender, data)
-    ac.log("DriftGod: Data type: " .. type(data))
     if data then
-        ac.log("DriftGod: PersonalBest field: " .. tostring(data.personalBest))
         PersonalBest = tonumber(data.personalBest) or 0
-		PersonalBestTarget = tonumber(data.personalBest)
+        PersonalBestTarget = tonumber(data.personalBest)
     end
 end)
 
@@ -394,16 +388,6 @@ function sendAchievement(achievement_type, value)
 end
 
 -- =============================
--- Send periodic stats update
--- =============================
-function sendStatsUpdate()
-    local carId = ac.getCarID(0) or "Unknown"
-    -- TODO: Replace with correct server communication function
-    ac.log(string.format("DriftGod: Stats update - Total: %d, Best: %d, Session: %.1fs", 
-        TotalScore, BestDrift, SecondsTimer - SessionStartTime))
-end
-
--- =============================
 -- Various Drift related set up
 -- =============================
 function script.update(dt)
@@ -444,7 +428,6 @@ function script.update(dt)
                 DriftIsActive = true
                 CurrentDriftMaxAngle = 0
                 CurrentDriftTotalTime = 0
-                ac.log("DriftGod: Drift started!")
             end
 			
             
