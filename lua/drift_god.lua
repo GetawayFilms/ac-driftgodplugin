@@ -92,6 +92,8 @@ local UI_CONFIG = {
 
 -- =============================================================================
 
+local connected = false
+
 -- =====================
 -- Core drift variables
 -- =====================
@@ -200,10 +202,8 @@ local colorYellowBland = rgbm(1, 1, 0.5, 1)
 local colorRed = rgbm(1, 0, 0, 1)
 local colorOrange = rgbm(1, 0.5, 0, 1)
 
--- =================================================
--- OnlineEvent definitions for server communication
--- =================================================
 
+-- OnlineEvent definitions for server communication
 local playerConnectEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_playerConnect"),
     connected = ac.StructItem.byte()
@@ -367,7 +367,7 @@ end
 -- Send achievement data
 -- =============================
 function sendAchievement(achievement_type, value)
-	ac.log("DriftGod: sendAchievement called with: " .. achievement_type)
+	ac.log("DriftGod: sendAchievement: " .. achievement_type)
 
     local achievementCode = 0
     if achievement_type == "geometry_student" then
@@ -388,17 +388,16 @@ function sendAchievement(achievement_type, value)
 end
 
 -- =============================
--- Various Drift related set up
+-- Session Start Script Update
 -- =============================
 function script.update(dt)
     Sim = ac.getSim()
     Car = ac.getCar(0)
-    
-    -- DATABASE: Send initial session data
-    local currentCarId = ac.getCarID(0) or "Unknown"
-    if not PlayerSessionSent or currentCarId ~= LastCarModel then
-        sendPlayerSession()
-    end
+
+	if not connected then
+		playerConnectEvent({connected = 1})
+		connected = true
+	end
     
     if not Sim.isPaused then
 
