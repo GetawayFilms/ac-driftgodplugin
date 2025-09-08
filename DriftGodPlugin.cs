@@ -170,19 +170,21 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 			
 		if (_driftSessions.TryGetValue(sender, out var session))
 		{
-			session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel);
+			bool wasNewPB = session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel);
 			
 			// Broadcast significant scores to other players
-			if (actualScore > 5000) // Adjust threshold as needed
+			if (actualScore > 5000)
 			{
 				var broadcast = new DriftBroadcastPacket
 				{
 					Score = (int)actualScore,
-					IsPersonalBest = 0, // We'll handle PB detection later
+					IsPersonalBest = (byte)(wasNewPB ? 1 : 0),
 					PlayerId = (byte)sender.EntryCar.SessionId
 				};
+
+				Log.Information("DriftGod: Sending broadcast with PB flag: {PBFlag}", wasNewPB ? 1 : 0);
 				
-				// Send to all other connected clients
+				// Send to all other connected clients (including self for testing)
 				foreach (var entryCar in _entryCarManager.EntryCars)
 				{
 					if (entryCar.Client != null && entryCar.Client.IsConnected)
@@ -191,7 +193,8 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 					}
 				}
 				
-				Log.Information("DriftGod: Broadcasting {PlayerName}'s {Score} point drift", sender.Name, actualScore);
+				Log.Information("DriftGod: Broadcasting {PlayerName}'s {Score} point drift{PB}", 
+					sender.Name, actualScore, wasNewPB ? " (NEW PB!)" : "");
 			}
 		}
 	}
@@ -250,7 +253,7 @@ public class DriftSession
                        PlayerName, currentCar, PersonalBest);
     }
     
-    public void OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName)
+    public bool OnDriftScoreReceived(long score, float maxAngle, float maxSpeed, float duration, string carName)
     {
         SessionDrifts++;
         
@@ -291,6 +294,7 @@ public class DriftSession
         
         Log.Debug("DriftGod: {PlayerName} scored {Score:N0} points{NewPB}", 
                  PlayerName, score, isNewPB ? " (NEW PB!)" : "");
+				 return isNewPB;
     }
     
     private void LoadPlayerStats()

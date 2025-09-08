@@ -252,9 +252,9 @@ local driftBroadcastEvent = ac.OnlineEvent({
 }, function(sender, data)
     if data then
         local playerName = ac.getDriverName(data.playerId) or ("Player " .. tostring(data.playerId))
-        local message = playerName .. ": " .. format_number(data.score)
+        local message = playerName .. "just scored " .. format_number(data.score)
         if data.isPersonalBest == 1 then
-            message = message .. " (PB!)"
+            message = message .. " (New PB!)"
         end
         showNotification(message)
     end
@@ -920,9 +920,12 @@ function script.drawUI()
 	
 	-- Drift notifications from other players
 	if NotificationTimer > 0 then
-		ui.pushDWriteFont(get_font_stats())
-		ui.setCursor(vec2(screen_width - scaled(400), scaled(100)))
-		ui.dwriteText(NotificationText, scaled(24), rgbm(1, 1, 1, NotificationAlpha))
+		ui.pushDWriteFont(get_font_message())
+		ui.setCursor(vec2(0, scaled(50)))
+		ui.dwriteTextAligned(NotificationText, scaled(28), ui.Alignment.Center, 
+    ui.Alignment.Start, 
+    vec2(0, 0), 
+    false, rgbm(1, 1, 0, NotificationAlpha))
 		ui.popDWriteFont()
 	end
     
