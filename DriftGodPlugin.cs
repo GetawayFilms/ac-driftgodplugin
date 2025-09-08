@@ -417,3 +417,16 @@ public class AchievementPacket : OnlineEvent<AchievementPacket>
     [OnlineEventField(Name = "achievementType")]
     public int AchievementType;
 }
+
+[OnlineEvent(Key = "DriftGod_driftBroadcast")]
+public class DriftBroadcastPacket : OnlineEvent<DriftBroadcastPacket>
+{
+    [OnlineEventField(Name = "score")]
+    public int Score;
+    
+    [OnlineEventField(Name = "isPersonalBest")]
+    public byte IsPersonalBest;
+    
+    [OnlineEventField(Name = "playerId")]
+    public byte PlayerId;  // We can use the car slot ID instead of name
+}
