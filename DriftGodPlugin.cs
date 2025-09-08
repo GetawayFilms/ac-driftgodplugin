@@ -171,7 +171,28 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		if (_driftSessions.TryGetValue(sender, out var session))
 		{
 			session.OnDriftScoreReceived(actualScore, actualAngle, 0, actualDuration, carModel);
-
+			
+			// Broadcast significant scores to other players
+			if (actualScore > 5000) // Adjust threshold as needed
+			{
+				var broadcast = new DriftBroadcastPacket
+				{
+					Score = (int)actualScore,
+					IsPersonalBest = 0, // We'll handle PB detection later
+					PlayerId = (byte)sender.EntryCar.SessionId
+				};
+				
+				// Send to all other connected clients
+				foreach (var entryCar in _entryCarManager.EntryCars)
+				{
+					if (entryCar.Client != null && entryCar.Client.IsConnected)
+					{
+						entryCar.Client.SendPacket(broadcast);
+					}
+				}
+				
+				Log.Information("DriftGod: Broadcasting {PlayerName}'s {Score} point drift", sender.Name, actualScore);
+			}
 		}
 	}
 

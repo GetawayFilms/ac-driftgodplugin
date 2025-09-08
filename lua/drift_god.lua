@@ -100,7 +100,6 @@ local connected = false
 local CurrentDriftTime = 0
 local CurrentDriftTimeout = 2
 local CurrentDriftScore = 0
-local CurrentDriftScoreTarget = 0
 local CurrentDriftCombo = 1
 local TotalScore = 0
 local TotalScoreTarget = 0
@@ -171,6 +170,13 @@ local BonusTimer = 0
 local BonusScale = 0
 local BonusAlpha = 0
 
+-- ====================
+-- Notification system
+-- ====================
+local NotificationText = ""
+local NotificationTimer = 0
+local NotificationAlpha = 0
+
 -- =========================
 -- Track and car references
 -- =========================
@@ -190,6 +196,7 @@ local dirt
 local PRAISE_DURATION = 2.0
 local WARNING_DURATION = 2.0
 local BONUS_DURATION = 2.0
+local NOTIFICATION_DURATION = 4.0
 
 -- =======
 -- Colors
@@ -210,6 +217,7 @@ local playerConnectEvent = ac.OnlineEvent({
     connected = ac.StructItem.byte()
 })
 
+-- Drift completed
 local driftCompleteEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_driftComplete"),
     score = ac.StructItem.int32(),
@@ -218,6 +226,7 @@ local driftCompleteEvent = ac.OnlineEvent({
 	duration = ac.StructItem.float()
 })
 
+-- Personal Best events
 local personalBestEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_personalBest"),
     personalBest = ac.StructItem.int64()
@@ -228,10 +237,28 @@ local personalBestEvent = ac.OnlineEvent({
     end
 end)
 
+-- Achievement events
 local achievementEvent = ac.OnlineEvent({
     ac.StructItem.key("DriftGod_achievement"),
     achievementType = ac.StructItem.int32()
 })
+
+-- Drift broadcast receiver
+local driftBroadcastEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_driftBroadcast"),
+    score = ac.StructItem.int32(),
+    isPersonalBest = ac.StructItem.byte(),
+    playerId = ac.StructItem.byte()
+}, function(sender, data)
+    if data then
+        local playerName = ac.getDriverName(data.playerId) or ("Player " .. tostring(data.playerId))
+        local message = playerName .. ": " .. format_number(data.score)
+        if data.isPersonalBest == 1 then
+            message = message .. " (PB!)"
+        end
+        showNotification(message)
+    end
+end)
 
 -- ==========================
 -- Screen detection function
@@ -310,7 +337,7 @@ function getNearbyCarDistance()
 end
 
 -- ================================
--- Praise, Bonus and Warning setup
+-- Show Text Functions
 -- ================================
 function showPraise(text)
     PraiseText = text
@@ -331,6 +358,12 @@ function showWarning(text)
     WarningTimer = WARNING_DURATION
     WarningScale = 0
     WarningAlpha = 0
+end
+
+function showNotification(text)
+    NotificationText = text
+    NotificationTimer = NOTIFICATION_DURATION
+    NotificationAlpha = 0
 end
 
 -- =============================
@@ -371,7 +404,7 @@ function sendAchievement(achievement_type, value)
 end
 
 -- =============================
--- Session Start Script Update
+-- Session Start - SCRIPT UPDATE
 -- =============================
 function script.update(dt)
     Sim = ac.getSim()
@@ -387,9 +420,9 @@ function script.update(dt)
         SecondsTimer = SecondsTimer + dt
         UpdatesTimer = UpdatesTimer + 1
         
--- ======================
--- Calculate drift angle
--- ======================
+		-- ======================
+		-- Calculate drift angle
+		-- ======================
         angle = math.max(0, ((math.max(math.abs(Car.wheels[2].slipAngle), math.abs(Car.wheels[3].slipAngle)))))
         if (Car.localVelocity.z <= 0 and Car.speedKmh > 1) then
             angle = 180 - angle
@@ -401,9 +434,9 @@ function script.update(dt)
         
         dirt = math.min(Car.wheels[0].surfaceDirt, Car.wheels[1].surfaceDirt, Car.wheels[2].surfaceDirt, Car.wheels[3].surfaceDirt)
         
--- =================
--- Main drift logic
--- =================
+		-- =================
+		-- Main drift logic
+		-- =================
         if angle > 10 and Car.speedKmh > 20 and dirt == 0 and Car.wheelsOutside < 4 and ((not TrackHasSpline) or Car.splinePosition >= SplineReached - 0.0001) then
             -- Player is actively drifting
             if not DriftIsActive then
@@ -480,9 +513,9 @@ function script.update(dt)
             LastAchievementTriggered = ""  -- Reset achievement tracking for next drift
         end
 	
--- ===================
--- Handle lap scoring
--- ===================
+		-- ===================
+		-- Handle lap scoring
+		-- ===================
         CurrentLapScoreTarget = CurrentLapScoreCutValue + SubmittedLapDriftScore + math.floor(CurrentDriftScore)
         if (not CurrentLapScoreCut) and CurrentLapScoreTarget < 0 then
             repeat
@@ -495,9 +528,9 @@ function script.update(dt)
             until CurrentLapScoreTarget >= 0
         end
         
--- =========================
--- Smooth value transitions
--- =========================
+		-- =========================
+		-- Smooth value transitions
+		-- =========================
         if TotalScore ~= TotalScoreTarget then
             TotalScore = TotalScore + math.floor((TotalScoreTarget - TotalScore) / 50)
             if math.floor((TotalScoreTarget - TotalScore) / 50) == 0 then
@@ -530,9 +563,9 @@ function script.update(dt)
 			end
 		end
         
--- ===================
--- Warning conditions
--- ===================
+		-- ===================
+		-- Warning conditions
+		-- ===================
         NoWarning = true
         if Car.speedKmh <= 20 then
             NoWarning = false
@@ -551,9 +584,9 @@ function script.update(dt)
             end
         end
         
--- ===================
--- Track spline logic
--- ===================
+		-- ===================
+		-- Track spline logic
+		-- ===================
         if TrackHasSpline then
             if Car.lapTimeMs < 3000 or Car.splinePosition < 0.001 then
                 SplineReached = 0
@@ -580,9 +613,9 @@ function script.update(dt)
             end
         end
         
--- ==================================
--- Calculate extra score multipliers
--- ==================================
+		-- ==================================
+		-- Calculate extra score multipliers
+		-- ==================================
         ExtraScore = false
         ExtraScoreMultiplier = 1
         if NoWarning then
@@ -619,9 +652,9 @@ function script.update(dt)
             ExtraScoreMultiplier = math.ceil(ExtraScoreMultiplier * 20) / 20
         end
         
--- ==========================
--- Handle penalty conditions
--- ==========================
+		-- ==========================
+		-- Handle penalty conditions
+		-- ==========================
         if NoWarning == false and CurrentDriftCombo > 1 then
             ComboReached = 0
             CurrentDriftScore = CurrentDriftScore - (CurrentDriftScore * dt)
@@ -635,9 +668,9 @@ function script.update(dt)
             CurrentDriftScore = CurrentDriftScore - (CurrentDriftScore * 2 * dt)
         end
         
--- =====================
--- Show praise messages
--- =====================
+		-- =====================
+		-- Show praise messages
+		-- =====================
         if NoWarning and PraiseTimer <= 0 then
 			local currentAchievement = ""
 			if CurrentDriftScore > 256000 then
@@ -671,10 +704,10 @@ function script.update(dt)
 			end
 		end
         
--- ==================
--- Update animations
--- ==================
-        -- Update the praise animation section:
+		-- ==================
+		-- Update animations
+		-- ==================
+        -- Update Praise animation
 		if PraiseTimer > 0 then
 			PraiseTimer = PraiseTimer - dt
 			local progress = 1 - (PraiseTimer / PRAISE_DURATION)
@@ -701,6 +734,7 @@ function script.update(dt)
 			end
 		end
 		
+		-- Update Bonus animation
 		if BonusTimer > 0 then
             BonusTimer = BonusTimer - dt
             local progress = 1 - (BonusTimer / BONUS_DURATION)
@@ -717,7 +751,7 @@ function script.update(dt)
             end
         end
 		
-       
+		-- Update Warning animation
         if WarningTimer > 0 then
             WarningTimer = WarningTimer - dt
             local progress = 1 - (WarningTimer / WARNING_DURATION)
@@ -733,6 +767,20 @@ function script.update(dt)
                 WarningAlpha = 1 - fadeProgress
             end
         end
+		
+		-- Update Notification animation
+		if NotificationTimer > 0 then
+			NotificationTimer = NotificationTimer - dt
+			local progress = 1 - (NotificationTimer / NOTIFICATION_DURATION)
+			if progress < 0.2 then
+				NotificationAlpha = progress / 0.2
+			elseif progress < 0.8 then
+				NotificationAlpha = 1
+			else
+				local fadeProgress = (progress - 0.8) / 0.2
+				NotificationAlpha = 1 - fadeProgress
+			end
+		end
     end
 end
 
@@ -869,6 +917,14 @@ function script.drawUI()
     false, rgbm(1, 0, 0, WarningAlpha))
         ui.popDWriteFont()
     end
+	
+	-- Drift notifications from other players
+	if NotificationTimer > 0 then
+		ui.pushDWriteFont(get_font_stats())
+		ui.setCursor(vec2(screen_width - scaled(400), scaled(100)))
+		ui.dwriteText(NotificationText, scaled(24), rgbm(1, 1, 1, NotificationAlpha))
+		ui.popDWriteFont()
+	end
     
     ui.endOutline(rgbm(0, 0, 0, 1), scaled(3))
 end
