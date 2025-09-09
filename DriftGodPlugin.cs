@@ -175,11 +175,22 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 			// Broadcast significant scores to other players
 			if (actualScore > 5000)
 			{
+				// Find the correct index in EntryCarManager
+				int correctIndex = -1;
+				for (int i = 0; i < _entryCarManager.EntryCars.Length; i++)
+				{
+					if (_entryCarManager.EntryCars[i].Client == sender)
+					{
+						correctIndex = i;
+						break;
+					}
+				}
+
 				var broadcast = new DriftBroadcastPacket
 				{
 					Score = (int)actualScore,
 					IsPersonalBest = (byte)(wasNewPB ? 1 : 0),
-					PlayerId = (byte)sender.EntryCar.SessionId
+					PlayerId = (byte)correctIndex  // Use the EntryCarManager index
 				};
 
 				Log.Information("DriftGod: Sending broadcast with PB flag: {PBFlag}", wasNewPB ? 1 : 0);
@@ -187,7 +198,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 				// Send to all other connected clients (including self for testing)
 				foreach (var entryCar in _entryCarManager.EntryCars)
 				{
-					if (entryCar.Client != null && entryCar.Client.IsConnected)
+					if (entryCar.Client != null && entryCar.Client != sender && entryCar.Client.IsConnected)
 					{
 						entryCar.Client.SendPacket(broadcast);
 					}

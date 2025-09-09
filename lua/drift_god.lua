@@ -19,7 +19,6 @@ local function load_fonts()
             ac.log("DriftGod: Font loading failed - " .. err)
             font_loading = false
         else
-            ac.log("DriftGod: Fonts loaded to - " .. folder)
             fonts_loaded = true
             fonts_folder_path = folder
             font_loading = false
@@ -67,7 +66,7 @@ local UI_CONFIG = {
     combo_font_size = 30,          -- Combo multiplier  
     angle_font_size = 50,         -- Angle display
     stats_font_size = 24,          -- Statistics board
-    praise_font_size = 40,        -- Praise messages
+    praise_font_size = 46,        -- Praise messages
     warning_font_size = 30,        -- Warning messages
 	bonus_font_size = 20,          -- Bonus messages
 
@@ -251,10 +250,11 @@ local driftBroadcastEvent = ac.OnlineEvent({
     playerId = ac.StructItem.byte()
 }, function(sender, data)
     if data then
+        
         local playerName = ac.getDriverName(data.playerId) or ("Player " .. tostring(data.playerId))
         local message = playerName .. " just scored " .. format_number(data.score)
         if data.isPersonalBest == 1 then
-            message = message .. " (New PB!)"
+            message = message .. " (PB!)"
         end
         showNotification(message)
     end
@@ -437,7 +437,7 @@ function script.update(dt)
 		-- =================
 		-- Main drift logic
 		-- =================
-        if angle > 10 and Car.speedKmh > 20 and dirt == 0 and Car.wheelsOutside < 4 and ((not TrackHasSpline) or Car.splinePosition >= SplineReached - 0.0001) then
+        if angle > 10 and Car.speedKmh > 15 and dirt == 0 and Car.wheelsOutside < 4 and ((not TrackHasSpline) or Car.splinePosition >= SplineReached - 0.0001) then
             -- Player is actively drifting
             if not DriftIsActive then
                 DriftIsActive = true
@@ -451,8 +451,8 @@ function script.update(dt)
             CurrentDriftTotalTime = CurrentDriftTotalTime + dt
             
             CurrentDriftTimeout = math.min(1, CurrentDriftTimeout + dt)
-            CurrentDriftScore = CurrentDriftScore + (((((angle - 10) * 10 + (Car.speedKmh - 20) * 10) * 1) * dt * CurrentDriftCombo)) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.2
-            CurrentDriftCombo = math.min(5, CurrentDriftCombo + (((((angle - 10) + (Car.speedKmh - 20)) * 0.25) * dt) / 100) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.5)
+            CurrentDriftScore = CurrentDriftScore + (((((angle - 10) * 10 + (Car.speedKmh - 15) * 10) * 1) * dt * CurrentDriftCombo)) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.2
+            CurrentDriftCombo = math.min(5, CurrentDriftCombo + (((((angle - 10) + (Car.speedKmh - 15)) * 0.25) * dt) / 100) * ExtraScoreMultiplier * InitialScoreMultiplier * 0.5)
             LongDriftTimer = LongDriftTimer + dt
             NoDriftTimer = 0.5
             InitialScoreMultiplier = math.min(1, LongDriftTimer)
@@ -567,7 +567,7 @@ function script.update(dt)
 		-- Warning conditions
 		-- ===================
         NoWarning = true
-        if Car.speedKmh <= 20 then
+        if Car.speedKmh <= 15 then
             NoWarning = false
             if WarningTimer <= 0 then
                 showWarning("")
@@ -619,7 +619,7 @@ function script.update(dt)
         ExtraScore = false
         ExtraScoreMultiplier = 1
         if NoWarning then
-            if angle > 120 then
+            if angle > 130 then
                 ExtraScoreMultiplier = ExtraScoreMultiplier * 0
                 ExtraScore = true
                 LongDriftTimer = 0
@@ -635,7 +635,7 @@ function script.update(dt)
                 ExtraScore = true
 				showBonus("TANDEM TIME!")
             end
-            if angle > 90 and angle <= 120 then
+            if angle > 100 and angle <= 130 then
                 ExtraScoreMultiplier = ExtraScoreMultiplier * 1.5
                 ExtraScore = true
 				showBonus("REVERSE ENTRY!")
@@ -807,7 +807,7 @@ function script.drawUI()
     -- Color logic for main display
 	-- =============================
     local mainColor = colorWhite
-    if Car.speedKmh <= 20 or dirt > 0 or Car.wheelsOutside == 4 then
+    if Car.speedKmh <= 15 or dirt > 0 or Car.wheelsOutside == 4 then
         mainColor = colorOrange
     elseif ExtraScore and ExtraScoreMultiplier ~= 1 then
         if ExtraScoreMultiplier >= 2 then
@@ -844,9 +844,17 @@ function script.drawUI()
 	-- =================
     if angle then
         local angleColor = colorRed
-        if angle >= 50 then
+        if angle >= 120 then
+            angleColor = colorRed
+        elseif angle >= 100 then
+            angleColor = colorOrange
+        elseif angle >= 90 then
+            angleColor = colorYellow
+        elseif angle >= 75 then
+            angleColor = colorYellowBland
+        elseif angle >= 50 then
             angleColor = colorGreen
-        elseif angle >= 35 then
+		elseif angle >= 35 then
             angleColor = colorGreenBland
         elseif angle >= 20 then
             angleColor = colorWhite
