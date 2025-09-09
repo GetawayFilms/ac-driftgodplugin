@@ -66,7 +66,7 @@ local UI_CONFIG = {
     combo_font_size = 30,          -- Combo multiplier  
     angle_font_size = 50,         -- Angle display
     stats_font_size = 24,          -- Statistics board
-    praise_font_size = 46,        -- Praise messages
+    praise_font_size = 50,        -- Praise messages
     warning_font_size = 30,        -- Warning messages
 	bonus_font_size = 20,          -- Bonus messages
 
