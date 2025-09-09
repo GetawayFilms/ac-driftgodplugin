@@ -66,6 +66,7 @@ local UI_CONFIG = {
     combo_font_size = 30,          -- Combo multiplier  
     angle_font_size = 50,         -- Angle display
     stats_font_size = 24,          -- Statistics board
+	rank_font_size = 30,          -- Rank display
     praise_font_size = 50,        -- Praise messages
     warning_font_size = 30,        -- Warning messages
 	bonus_font_size = 20,          -- Bonus messages
@@ -77,7 +78,7 @@ local UI_CONFIG = {
     angle_x_from_right = 220,      -- Angle distance from right edge
     angle_y = 30,                  -- Angle Y position
     stats_x = 30,                  -- Stats X position
-    stats_y_from_bottom = 130,     -- Stats distance from bottom
+    stats_y_from_bottom = 180,     -- Stats distance from bottom
     message_y_praise = 70,         -- Praise messages Y position
     message_x_warning = 20,        -- Warning messages X offset
 	message_y_warning = 60,        -- Warning messages Y position
@@ -144,6 +145,7 @@ local DriftIsActive = false
 -- ============================
 local PersonalBest = 0
 local PersonalBestTarget = 0
+local PlayerCurrentRank = 0
 
 -- =======================================
 -- Screen detection and scaling variables
@@ -257,6 +259,18 @@ local driftBroadcastEvent = ac.OnlineEvent({
             message = message .. " (PB!)"
         end
         showNotification(message)
+    end
+end)
+
+-- Player rank receiver
+local playerRankEvent = ac.OnlineEvent({
+    ac.StructItem.key("DriftGod_playerRank"),
+    currentRank = ac.StructItem.int32()
+}, function(sender, data)
+    if data then
+        ac.log("DriftGod: Received rank: " .. tostring(data.currentRank))
+        -- Store the rank for UI display
+        PlayerCurrentRank = data.currentRank
     end
 end)
 
@@ -883,6 +897,9 @@ function script.drawUI()
     
     ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing * 2)))
     ui.dwriteText("THIS SESSION: " .. format_number(BestDrift), scaled(UI_CONFIG.stats_font_size), colorWhite)
+	
+	ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing * 4)))
+	ui.dwriteText("RANK # " .. tostring(PlayerCurrentRank), scaled(UI_CONFIG.rank_font_size), colorWhite)
     
     if TrackHasSpline then
         ui.setCursor(vec2(scaled(UI_CONFIG.stats_x), stats_y + scaled(UI_CONFIG.stats_line_spacing * 3)))

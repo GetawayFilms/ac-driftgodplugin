@@ -21,6 +21,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
     private readonly ACServerConfiguration _serverConfiguration;
     private readonly Dictionary<ACTcpClient, DriftSession> _driftSessions = new();
 	private readonly CSPClientMessageTypeManager _cspClientMessageTypeManager;
+	private readonly HttpClient _httpClient;
 
     public DriftGodPlugin(
         DriftGodConfiguration configuration,
@@ -37,6 +38,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
         _scriptProvider = scriptProvider;
         _serverConfiguration = serverConfiguration;
 		_cspClientMessageTypeManager = cspClientMessageTypeManager;
+		_httpClient = new HttpClient();
 		// Register drift event handlers
 		cspClientMessageTypeManager.RegisterOnlineEvent<PlayerConnectPacket>(OnPlayerConnect);
 		cspClientMessageTypeManager.RegisterOnlineEvent<DriftCompletePacket>(OnDriftComplete);
@@ -89,6 +91,116 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 	{
 		Log.Information("DriftGod: {PlayerName} connected", client.Name);
 	}
+	
+	private async Task TestFirebaseConnection()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("https://firestore.googleapis.com/v1/projects/driftgod-leaderboard/databases/(default)/documents/drift_leaderboard/76561198257607913");
+            var content = await response.Content.ReadAsStringAsync();
+            Log.Information("DriftGod: Firebase test response: {Content}", content);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "DriftGod: Firebase connection test failed");
+        }
+    }
+	
+	public async Task<int> GetPlayerRank(ulong steamId)
+	{
+		try
+		{
+			var response = await _httpClient.GetAsync("https://firestore.googleapis.com/v1/projects/driftgod-leaderboard/databases/(default)/documents/drift_leaderboard?orderBy=best_score%20desc");
+			var content = await response.Content.ReadAsStringAsync();
+			
+			// Parse the JSON to find player rank
+			using var document = System.Text.Json.JsonDocument.Parse(content);
+			var documents = document.RootElement.GetProperty("documents");
+			
+			int rank = 1;
+			foreach (var doc in documents.EnumerateArray())
+			{
+				var docName = doc.GetProperty("name").GetString();
+				if (docName != null && docName.Contains(steamId.ToString()))
+				{
+					Log.Information("DriftGod: Found player at rank {Rank}", rank);
+					return rank;
+				}
+				rank++;
+			}
+			
+			Log.Warning("DriftGod: Player not found in leaderboard");
+			return -1;
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "DriftGod: Failed to get player rank");
+			return -1;
+		}
+	}
+	
+	public async Task UpdateFirebasePlayer(ulong steamId, long score, string playerName)
+	{
+		try
+		{
+			var url = $"https://firestore.googleapis.com/v1/projects/driftgod-leaderboard/databases/(default)/documents/drift_leaderboard/{steamId}";
+			
+			var body = new
+			{
+				fields = new
+				{
+					best_score = new { integerValue = score.ToString() },
+					player_name = new { stringValue = playerName },
+					last_updated = new { timestampValue = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") }
+				}
+			};
+			
+			var json = System.Text.Json.JsonSerializer.Serialize(body);
+			var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+			
+			var response = await _httpClient.PatchAsync(url, content);
+			
+			if (response.IsSuccessStatusCode)
+			{
+				Log.Information("DriftGod: Updated Firebase for {PlayerName} - Score: {Score}", playerName, score);
+			}
+			else
+			{
+				Log.Warning("DriftGod: Failed to update Firebase for {PlayerName} - Status: {Status}", playerName, response.StatusCode);
+			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "DriftGod: Firebase update failed for {PlayerName}", playerName);
+		}
+	}
+	
+	private async Task SyncPlayerToFirebase(ACTcpClient client, DriftSession session)
+	{
+		// Always update Firebase with current JSON data
+		await UpdateFirebasePlayer(client.Guid, session.PersonalBest, client.Name);
+		
+		// Get rank from Firebase
+		var rank = await GetPlayerRank(client.Guid);
+		
+		// Send rank to client
+		client.SendPacket(new PlayerRankPacket
+		{
+			CurrentRank = rank
+		});
+		
+		Log.Information("DriftGod: Synced {PlayerName} - PB: {PB}, Rank: {Rank}", client.Name, session.PersonalBest, rank);
+	}
+	
+	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	{
+		Log.Information("DriftGodPlugin by Living God - Started successfully!");
+		
+		while (!stoppingToken.IsCancellationRequested)
+		{
+			await Task.Delay(5000, stoppingToken);
+		}
+	}
 
     private void OnClientDisconnected(ACTcpClient client, EventArgs args)
     {
@@ -106,15 +218,18 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		// Not used for incoming requests, only for outgoing PB data
 	}
 	
-	private void OnPlayerConnect(ACTcpClient sender, PlayerConnectPacket packet)
+	private async void OnPlayerConnect(ACTcpClient sender, PlayerConnectPacket packet)
 	{
 		Log.Information("DriftGod: Player {PlayerName} sent connect event", sender.Name);
 		
-		// Create drift session when we receive the connect event
-		var driftSession = new DriftSession(sender);
+		// Create drift session (loads PB from JSON)
+		var driftSession = new DriftSession(sender, this);
 		_driftSessions[sender] = driftSession;
 		
-		// Send personal best back to client
+		// Sync JSON PB to Firebase and get rank
+		await SyncPlayerToFirebase(sender, driftSession);
+		
+		// Send personal best back to client (from JSON)
 		sender.SendPacket(new PersonalBestPacket
 		{
 			PersonalBest = driftSession.PersonalBest
@@ -216,16 +331,6 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		
 		// Handle session end data when we add those fields
 	}
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        Log.Information("DriftGodPlugin by Living God - Started successfully!");
-        
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(5000, stoppingToken);
-        }
-    }
 }
 
 public class DriftSession
@@ -244,12 +349,15 @@ public class DriftSession
     private PlayerDriftStats _stats = new();
     private readonly string _playerDataPath;
 
-    public DriftSession(ACTcpClient client)
+    private readonly DriftGodPlugin _mainPlugin;
+
+public DriftSession(ACTcpClient client, DriftGodPlugin mainPlugin)
     {
         Client = client;
         PlayerName = client.Name ?? "Unknown";
         SteamId = client.Guid;
         SessionStart = DateTime.UtcNow;
+		_mainPlugin = mainPlugin;
 		
 		string currentCar = client.EntryCar?.Model ?? "Unknown";
         
@@ -291,6 +399,22 @@ public class DriftSession
             _stats.BestScore = score;
             _stats.BestScoreMaxAngle = maxAngle;
             _stats.BestScoreCarName = Client.EntryCar?.Model ?? "Unknown";
+			
+			// Update Firebase and recalculate rank
+		_ = Task.Run(async () =>
+		{
+			await _mainPlugin.UpdateFirebasePlayer(SteamId, score, PlayerName);
+			var newRank = await _mainPlugin.GetPlayerRank(SteamId);
+			
+			if (newRank > 0)
+			{
+				Client.SendPacket(new PlayerRankPacket
+				{
+					CurrentRank = newRank
+				});
+				Log.Information("DriftGod: {PlayerName} new PB! New rank: {Rank}", PlayerName, newRank);
+			}
+		});
         }
         
         // Update general stats
@@ -366,6 +490,7 @@ public class DriftSession
     {
         return _stats;
     }
+	
 }
 
 // Persistent player statistics
@@ -465,4 +590,11 @@ public class DriftBroadcastPacket : OnlineEvent<DriftBroadcastPacket>
     
     [OnlineEventField(Name = "playerId")]
     public byte PlayerId;  // We can use the car slot ID instead of name
+}
+
+[OnlineEvent(Key = "DriftGod_playerRank")]
+public class PlayerRankPacket : OnlineEvent<PlayerRankPacket>
+{
+    [OnlineEventField(Name = "currentRank")]
+    public int CurrentRank;
 }
