@@ -381,19 +381,6 @@ function showNotification(text)
 end
 
 -- =============================
--- Send drift completion data
--- =============================
-function sendDriftCompleted(score, angle, duration, combo)
-    ac.log("DriftGod: Sending drift - Duration: " .. tostring(duration))
-    driftCompleteEvent({
-        score = score,
-        avgAngle = angle,
-        avgCombo = combo,
-        duration = duration
-    })
-end
-
--- =============================
 -- Send achievement data
 -- =============================
 function sendAchievement(achievement_type, value)
@@ -507,17 +494,6 @@ function script.update(dt)
 					if math.floor(CurrentDriftScore) > PersonalBestTarget then
 						PersonalBestTarget = math.floor(CurrentDriftScore)
 					end
-                    
-                    -- DATABASE: Send completed drift data with CAPTURED values
-                    sendDriftCompleted(
-                        math.floor(CurrentDriftScore),
-                        math.floor(CurrentDriftMaxAngle),  -- Peak angle during drift
-                        CurrentDriftTotalTime,             -- Total drift duration  
-                        ComboReached
-                    )
-                    
-                    ac.log(string.format("DriftGod: Drift ended - Max Angle: %.1f°, Duration: %.1fs", 
-                        CurrentDriftMaxAngle, CurrentDriftTotalTime))
                 end
             end
             
@@ -687,7 +663,7 @@ function script.update(dt)
 		-- =====================
         if NoWarning and PraiseTimer <= 0 then
 			local currentAchievement = ""
-			if CurrentDriftScore > 256000 then
+			if ExtraScoreMultiplier >= 12 or CurrentDriftScore > 256000 then
 				currentAchievement = "drift_god"
 			elseif ComboReached >= 5 or CurrentDriftScore > 64000 then
 				currentAchievement = "professor_slideways"
