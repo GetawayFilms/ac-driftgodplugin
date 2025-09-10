@@ -256,7 +256,7 @@ local driftBroadcastEvent = ac.OnlineEvent({
         local playerName = ac.getDriverName(data.playerId) or ("Player " .. tostring(data.playerId))
         local message = playerName .. " just scored " .. format_number(data.score)
         if data.isPersonalBest == 1 then
-            message = message .. " (PB!)"
+            message = message .. " (New PB!)"
         end
         showNotification(message)
     end
