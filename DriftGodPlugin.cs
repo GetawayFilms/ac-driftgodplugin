@@ -139,7 +139,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 		}
 	}
 	
-	public async Task UpdateFirebasePlayer(ulong steamId, long score, string playerName)
+	public async Task UpdateFirebasePlayer(ulong steamId, long score, string playerName, PlayerDriftStats stats)
 	{
 		try
 		{
@@ -151,6 +151,10 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 				{
 					best_score = new { integerValue = score.ToString() },
 					player_name = new { stringValue = playerName },
+					best_score_car = new { stringValue = stats.BestScoreCarName },
+					best_score_angle = new { doubleValue = stats.BestScoreMaxAngle },
+					longest_drift = new { doubleValue = stats.LongestSingleDrift },
+					total_drifts = new { integerValue = stats.TotalDrifts.ToString() },
 					last_updated = new { timestampValue = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") }
 				}
 			};
@@ -162,7 +166,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 			
 			if (response.IsSuccessStatusCode)
 			{
-				Log.Information("DriftGod: Updated Firebase for {PlayerName} - Score: {Score}", playerName, score);
+				Log.Information("DriftGod: Updated Firebase with complete data for {PlayerName}", playerName);
 			}
 			else
 			{
@@ -178,7 +182,7 @@ public class DriftGodPlugin : CriticalBackgroundService, IAssettoServerAutostart
 	private async Task SyncPlayerToFirebase(ACTcpClient client, DriftSession session)
 	{
 		// Always update Firebase with current JSON data
-		await UpdateFirebasePlayer(client.Guid, session.PersonalBest, client.Name);
+		await UpdateFirebasePlayer(client.Guid, session.PersonalBest, client.Name, session.GetStats());
 		
 		// Get rank from Firebase
 		var rank = await GetPlayerRank(client.Guid);
@@ -401,20 +405,20 @@ public DriftSession(ACTcpClient client, DriftGodPlugin mainPlugin)
             _stats.BestScoreCarName = Client.EntryCar?.Model ?? "Unknown";
 			
 			// Update Firebase and recalculate rank
-		_ = Task.Run(async () =>
-		{
-			await _mainPlugin.UpdateFirebasePlayer(SteamId, score, PlayerName);
-			var newRank = await _mainPlugin.GetPlayerRank(SteamId);
-			
-			if (newRank > 0)
+			_ = Task.Run(async () =>
 			{
-				Client.SendPacket(new PlayerRankPacket
+				await _mainPlugin.UpdateFirebasePlayer(SteamId, score, PlayerName, _stats);
+				var newRank = await _mainPlugin.GetPlayerRank(SteamId);
+				
+				if (newRank > 0)
 				{
-					CurrentRank = newRank
-				});
-				Log.Information("DriftGod: {PlayerName} new PB! New rank: {Rank}", PlayerName, newRank);
-			}
-		});
+					Client.SendPacket(new PlayerRankPacket
+					{
+						CurrentRank = newRank
+					});
+					Log.Information("DriftGod: {PlayerName} new PB! New rank: {Rank}", PlayerName, newRank);
+				}
+			});
         }
         
         // Update general stats

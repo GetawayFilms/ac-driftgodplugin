@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("DriftGodPlugin - Advanced drift scoring system by Living God")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+372a2d67ec725d318f6d4fca4a1e9e088a030f8b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a640aaf13ad321227933b7ab15a1f97c58e5e374")]
 [assembly: System.Reflection.AssemblyProductAttribute("DriftGodPlugin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DriftGodPlugin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
