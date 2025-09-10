@@ -404,6 +404,16 @@ function sendAchievement(achievement_type, value)
     })
 end
 
+function sendDriftCompleted(score, angle, duration, combo)
+    ac.log("DriftGod: Sending drift - Duration: " .. tostring(duration))
+    driftCompleteEvent({
+        score = score,
+        avgAngle = angle,
+        avgCombo = combo,
+        duration = duration
+    })
+end
+
 -- =============================
 -- Session Start - SCRIPT UPDATE
 -- =============================
@@ -494,6 +504,16 @@ function script.update(dt)
 					if math.floor(CurrentDriftScore) > PersonalBestTarget then
 						PersonalBestTarget = math.floor(CurrentDriftScore)
 					end
+					
+					sendDriftCompleted(
+                        math.floor(CurrentDriftScore),
+                        math.floor(CurrentDriftMaxAngle),  -- Peak angle during drift
+                        CurrentDriftTotalTime,             -- Total drift duration  
+                        ComboReached
+                    )
+                    
+                    ac.log(string.format("DriftGod: Drift ended - Max Angle: %.1f°, Duration: %.1fs", 
+                        CurrentDriftMaxAngle, CurrentDriftTotalTime))
                 end
             end
             
